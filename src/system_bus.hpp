@@ -1,9 +1,7 @@
 #ifndef SYSTEM_BUS_HPP
 #define SYSTEM_BUS_HPP
 #include <cstdint>
-
-using u8  = std::uint8_t;
-using u16 = std::uint16_t;
+#include "types.hpp"
 
 class SystemBus {
     public:
