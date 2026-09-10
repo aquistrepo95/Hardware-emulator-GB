@@ -297,3 +297,13 @@ bool MMU :: pending_interrupts() const {
 
     return (interrupt_flag_ & interrupt_enabled_ & 0x1F) != 0;
 }
+
+// read MMU from IO 
+u8 MMU :: read_bytes(u16 address) const {
+    
+}
+
+// write to MMU from IO
+void MMU :: write_bytes(u16 address, u8 value) {
+    
+}

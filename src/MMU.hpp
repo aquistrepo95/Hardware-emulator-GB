@@ -9,7 +9,7 @@
 #include "system_bus.hpp"
 #include "MBC_bus.hpp"
 
-class MMU{
+class MMU : public SystemBus {
     private:
         // boot rom mapped i.e nintento logo
         bool boot_rom_mapped = true;
@@ -60,6 +60,9 @@ class MMU{
             IO_devices.push_back(std::ref(IO_device));
         }
 
+        // PPU read and write functions
+        virtual u8 read_bytes(u16 address) const override;
+        virtual void write_bytes(u16 address, u8 value) override;
 };
 
 #endif //MMU_HPP
