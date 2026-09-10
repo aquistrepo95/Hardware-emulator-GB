@@ -13,7 +13,7 @@ void CPU :: CPU_cycle() {
     // check if the halt flag is set, if so skip the cycle
     if(halt_flag) {
         //std::cout << "CPU is halted" << std::endl;
-        clock.cycle_tick(4); // still consumes 4 cycles even if halted
+        clock.get().cycle_tick(4); // still consumes 4 cycles even if halted
 
         // check if an interrupt is requested and enabled, if so exit the halt state
         if(mmu.get().pending_interrupts()) {
@@ -98,11 +98,11 @@ void CPU :: execute_interrupts() {
         mmu.get().write_to_bytes(rg.stack_pointer, (rg.program_counter >> 8) & 0xff);
         rg.stack_pointer = -1;
         mmu.get().write_to_bytes(rg.stack_pointer, rg.program_counter & 0xff);
-        clock.cycle_tick(8);
+        clock.get().cycle_tick(8);
 
         // set the pc/jump to the interrupt address
         rg.program_counter = vector;
-        clock.cycle_tick(4);
+        clock.get().cycle_tick(4);
     }
 }
 
@@ -157,7 +157,7 @@ void CPU :: PUSH_stack() {
     // write the low byte to the stack
     rg.stack_pointer -= 1;
     mmu.get().write_to_bytes(rg.stack_pointer, value & 0xff);
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 // POP from stack
@@ -175,17 +175,17 @@ void CPU :: POP_stack() {
           case 3: rg.af = (static_cast<u16>(high_byte) << 8) | low_byte; break;
           default: break; // invalid register pair
     }
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]); 
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]); 
 }
 
 // opcode functions
 // NOP
 void CPU :: _0x00_NOP() {
     rg.program_counter += 1;
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
-//HALT
+// HALT
 void CPU :: HALT() {
     if(IME_flag) {
         halt_flag = true;
@@ -198,7 +198,7 @@ void CPU :: HALT() {
             halt_flag = true;
         }
     }
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 // STOP
@@ -206,7 +206,7 @@ void CPU :: _0x1000_STOP() {
     u8 dummy_opcode = mmu.get().read_from_bytes(rg.program_counter++);
     halt_flag = true;
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 // LD functions
@@ -222,7 +222,7 @@ void CPU :: LD_r16_imm16() {
         case 3: rg.stack_pointer = (static_cast<u16>(high_byte) << 8) | low_byte; break;
         default: break; // invalid register pair
     }
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: LD_r16_a() {
@@ -241,7 +241,7 @@ void CPU :: LD_r16_a() {
     else if(destination == 3) {
         rg.hl -= 1; // decrement HL after writing to memory
     }
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: LD_r8_imm8() {
@@ -249,7 +249,7 @@ void CPU :: LD_r8_imm8() {
     u8 destination = (opcode & 0x38) >> 3;
 
     write_register(destination, value);
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: LD_imm16_sp() {
@@ -263,7 +263,7 @@ void CPU :: LD_imm16_sp() {
     mmu.get().write_to_bytes(destination_address, low_byte_sp);
     mmu.get().write_to_bytes(destination_address + 1, high_byte_sp);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: LD_a_r16() {
@@ -287,7 +287,7 @@ void CPU :: LD_a_r16() {
     else if(source == 3) {
         rg.hl -= 1; // decrement HL after reading from memory
     }
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: LD_r8_r8() {
@@ -296,7 +296,7 @@ void CPU :: LD_r8_r8() {
 
     write_register(destination, source_value); 
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]); 
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]); 
 }
 
 void CPU :: LD_imm8_a() {
@@ -305,21 +305,21 @@ void CPU :: LD_imm8_a() {
     u16 destination_address = 0xff00 | operand;
     mmu.get().write_to_bytes(destination_address, rg.a);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: LD_c_a() {
     u16 destination_address = 0xff00 | rg.c;
     mmu.get().write_to_bytes(destination_address, rg.a);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: LD_a_c() {
     u16 source = 0xff00 | rg.c;
     rg.a = mmu.get().read_from_bytes(source);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: LD_imm16_a() {
@@ -329,7 +329,7 @@ void CPU :: LD_imm16_a() {
     u16 destination_address = (high_byte << 8) | low_byte;
     mmu.get().write_to_bytes(destination_address, rg.a);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: LD_a_imm8() {
@@ -338,7 +338,7 @@ void CPU :: LD_a_imm8() {
 
     rg.a = mmu.get().read_from_bytes(source_address);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: LD_HL_SP_imm8() {
@@ -359,14 +359,14 @@ void CPU :: LD_HL_SP_imm8() {
     rg.set_flag(rg.HalfCarry_flag, check_half_carry);
     rg.set_flag(rg.Carry_flag, check_carry);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: LD_SP_HL() {
     u16 source  = mmu.get().read_from_bytes(rg.hl);
     rg.stack_pointer = source;
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: LD_a_imm16() {
@@ -376,7 +376,7 @@ void CPU :: LD_a_imm16() {
     u16 source_address = (high_byte << 8) | low_byte;
     rg.a = mmu.get().read_from_bytes(source_address);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 // increment functions
@@ -390,7 +390,7 @@ void CPU :: INC_r16() {
         default: break; // invalid register pair
     }
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: INC_r8() {
@@ -416,7 +416,7 @@ void CPU :: INC_r8() {
     rg.set_flag(rg.Subtract_flag, false);
     rg.set_flag(rg.HalfCarry_flag, check_half_carry);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }    
 
 // decrement functions
@@ -430,7 +430,7 @@ void CPU :: DEC_r16() {
         default: break; // invalid register pair
     }
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: DEC_r8() {
@@ -456,7 +456,7 @@ void CPU :: DEC_r8() {
     rg.set_flag(rg.Subtract_flag, true);
     rg.set_flag(rg.HalfCarry_flag, check_half_carry);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 // rotate function
@@ -471,7 +471,7 @@ void CPU :: RLCA() {
        rg.set_flag(rg.Carry_flag, true); 
     }
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: RLA() {
@@ -486,7 +486,7 @@ void CPU :: RLA() {
       rg.set_flag(rg.Carry_flag, true);   
     }   
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: RRCA() {
@@ -501,7 +501,7 @@ void CPU :: RRCA() {
        rg.set_flag(rg.Carry_flag, true); 
     }   
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: RRA() {
@@ -516,7 +516,7 @@ void CPU :: RRA() {
        rg.set_flag(rg.Carry_flag, true); 
     }    
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 // flip all bits
@@ -526,7 +526,7 @@ void CPU :: CPL() {
     rg.set_flag(rg.Subtract_flag, true);
     rg.set_flag(rg.HalfCarry_flag, true);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: CCF() {
@@ -539,7 +539,7 @@ void CPU :: CCF() {
     rg.set_flag(rg.Subtract_flag, false);
     rg.set_flag(rg.HalfCarry_flag, false);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);  
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);  
 }
 
 // adjust the A(accumulator) register
@@ -579,7 +579,7 @@ void CPU :: DAA() { // comeback here
     // only keep the subtract flag
     rg.f &= rg.Subtract_flag;
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 // set carry flag
@@ -589,7 +589,7 @@ void CPU :: SCF() {
     rg.set_flag(rg.Subtract_flag, false);
     rg.set_flag(rg.HalfCarry_flag, false);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 // add functions
@@ -665,7 +665,7 @@ void CPU :: ADD_a_r8() {
     rg.set_flag(rg.HalfCarry_flag, check_half_carry);
     rg.set_flag(rg.Carry_flag, check_carry);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: ADC_a_r8() {
@@ -741,7 +741,7 @@ void CPU :: ADC_a_r8() {
     rg.set_flag(rg.HalfCarry_flag, check_half_carry);
     rg.set_flag(rg.Carry_flag, check_carry);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: ADD_a_imm8() {
@@ -756,7 +756,7 @@ void CPU :: ADD_a_imm8() {
     rg.set_flag(rg.HalfCarry_flag, check_half_carry);
     rg.set_flag(rg.Carry_flag, check_carry);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: ADC_a_imm8() {
@@ -772,7 +772,7 @@ void CPU :: ADC_a_imm8() {
     rg.set_flag(rg.HalfCarry_flag, check_half_carry);
     rg.set_flag(rg.Carry_flag, check_carry);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: ADD_HL_r16() {
@@ -817,7 +817,7 @@ void CPU :: ADD_HL_r16() {
     rg.set_flag(rg.HalfCarry_flag, check_half_carry);
     rg.set_flag(rg.Carry_flag, check_carry);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: ADD_SP_imm8() { 
@@ -837,7 +837,7 @@ void CPU :: ADD_SP_imm8() {
     rg.set_flag(rg.HalfCarry_flag, check_half_carry);
     rg.set_flag(rg.Carry_flag, check_carry);    
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]); 
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]); 
 }
 
 // subtract functions
@@ -910,7 +910,7 @@ void CPU :: SUB_a_r8() {
     rg.set_flag(rg.HalfCarry_flag, check_half_carry);
     rg.set_flag(rg.Carry_flag, check_carry);
 
-   clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+   clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: SBC_a_r8() {
@@ -987,7 +987,7 @@ void CPU :: SBC_a_r8() {
     rg.set_flag(rg.HalfCarry_flag, check_half_carry);
     rg.set_flag(rg.Carry_flag, check_carry);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: SUB_a_imm8() {
@@ -1002,7 +1002,7 @@ void CPU :: SUB_a_imm8() {
     rg.set_flag(rg.HalfCarry_flag, check_half_carry);
     rg.set_flag(rg.Carry_flag, check_carry);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: SBC_a_imm8() {
@@ -1017,7 +1017,7 @@ void CPU :: SBC_a_imm8() {
     rg.set_flag(rg.HalfCarry_flag, check_half_carry);
     rg.set_flag(rg.Carry_flag, check_carry);
     
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 // AND, OR, XOR, CP functions
@@ -1044,7 +1044,7 @@ void CPU :: AND_a_r8() {
     rg.set_flag(rg.HalfCarry_flag, true);
     rg.set_flag(rg.Carry_flag, false);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: AND_a_imm8() {
@@ -1056,7 +1056,7 @@ void CPU :: AND_a_imm8() {
     rg.set_flag(rg.HalfCarry_flag, true);
     rg.set_flag(rg.Carry_flag, false);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: OR_a_r8() {
@@ -1082,7 +1082,7 @@ void CPU :: OR_a_r8() {
     rg.set_flag(rg.HalfCarry_flag, false);
     rg.set_flag(rg.Carry_flag, false);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: OR_a_imm8() {
@@ -1094,7 +1094,7 @@ void CPU :: OR_a_imm8() {
     rg.set_flag(rg.HalfCarry_flag, false);
     rg.set_flag(rg.Carry_flag, false);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: XOR_a_r8() {
@@ -1120,7 +1120,7 @@ void CPU :: XOR_a_r8() {
     rg.set_flag(rg.HalfCarry_flag, false);
     rg.set_flag(rg.Carry_flag, false);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: XOR_a_imm8() {
@@ -1132,7 +1132,7 @@ void CPU :: XOR_a_imm8() {
     rg.set_flag(rg.HalfCarry_flag, false);
     rg.set_flag(rg.Carry_flag, false);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: CP_a_r8() { 
@@ -1196,7 +1196,7 @@ void CPU :: CP_a_r8() {
     rg.set_flag(rg.HalfCarry_flag, check_half_carry);
     rg.set_flag(rg.Carry_flag, check_carry);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: CP_imm8() { 
@@ -1210,7 +1210,7 @@ void CPU :: CP_imm8() {
     rg.set_flag(rg.HalfCarry_flag, check_half_carry);
     rg.set_flag(rg.Carry_flag, check_carry);
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 // RET functions
@@ -1220,10 +1220,10 @@ void CPU :: RET_cond() {
         u8 high_byte = mmu.get().read_from_bytes(rg.stack_pointer++);
 
         rg.program_counter = (static_cast<u16>(high_byte) << 8) | low_byte;
-        clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+        clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
     }
     else{
-        clock.cycle_tick(8);
+        clock.get().cycle_tick(8);
     }
 }   
 
@@ -1232,7 +1232,7 @@ void CPU :: RET() {
     u8 high_byte = mmu.get().read_from_bytes(rg.stack_pointer++);
 
     rg.program_counter = (static_cast<u16>(high_byte) << 8) | low_byte;
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: RETI() { // return from interrupt
@@ -1242,7 +1242,7 @@ void CPU :: RETI() { // return from interrupt
     rg.program_counter = (static_cast<u16>(high_byte) << 8) | low_byte;
 
     IME_flag = true;
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 // JUMP functions
@@ -1250,10 +1250,10 @@ void CPU :: JR_cond_imm8() {
     if(!rg.get_Zero_flag() || rg.get_Zero_flag() || !rg.get_Carry_flag() || rg.get_Carry_flag()) {
         u8 offset = static_cast<u8>(mmu.get().read_from_bytes(rg.program_counter++));
         rg.program_counter += offset;
-        clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+        clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
     }
     else {
-        clock.cycle_tick(8);
+        clock.get().cycle_tick(8);
     }
 }
 
@@ -1261,7 +1261,7 @@ void CPU :: JR_imm8() {
     u8 offset = static_cast<u8>(mmu.get().read_from_bytes(rg.program_counter++));
 
     rg.program_counter += offset;
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: JP_cond_imm16() {
@@ -1270,10 +1270,10 @@ void CPU :: JP_cond_imm16() {
         u8 high_byte = mmu.get().read_from_bytes(rg.program_counter++);
 
         rg.program_counter = (static_cast<u16>(high_byte) << 8) | low_byte;
-        clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+        clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
     }
     else {
-        clock.cycle_tick(12);
+        clock.get().cycle_tick(12);
     }
 }
 
@@ -1282,7 +1282,7 @@ void CPU :: JP_imm16() {
     u8 high_byte = mmu.get().read_from_bytes(rg.program_counter++);
 
     rg.program_counter = (static_cast<u16>(high_byte) << 8) | low_byte;
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 void CPU :: JP_hl() { 
@@ -1290,7 +1290,7 @@ void CPU :: JP_hl() {
     u8 high_byte = read_register(rg.h);
 
     rg.program_counter = (static_cast<u16>(high_byte) << 8) | low_byte;
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 // CALL functions
@@ -1308,10 +1308,10 @@ void CPU :: CALL_cond_i16() {
         mmu.get().write_to_bytes(rg.stack_pointer + 1, rg.program_counter & 0xff); // low byte
 
         rg.program_counter = address;
-        clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+        clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
     }
     else{
-        clock.cycle_tick(12);
+        clock.get().cycle_tick(12);
     }
 }
 
@@ -1328,7 +1328,7 @@ void CPU :: CALL_i16() {
     mmu.get().write_to_bytes(rg.stack_pointer, rg.program_counter & 0xff); // low byte
 
     rg.program_counter = address;
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 // RST functions
@@ -1351,26 +1351,26 @@ void CPU :: RST() {
         default: break; // invalid RST address
     }
 
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 // DI
 void CPU :: DI() {
     IME_enable_pending = 0;
     IME_flag = false;
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 // EI
 void CPU :: EI() {
     IME_enable_pending = 2;
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 // invalid opcode handler
 void CPU :: invalid() {
     std::cerr << opcode << " Error: Invalid opcode encountered" << std::endl;
-    clock.cycle_tick(nonCB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
 /*###################################################### CB instructions ######################################################*/
@@ -1389,7 +1389,7 @@ void CPU :: RLC() {
         rg.set_flag(rg.Carry_flag, true);
     }
 
-    clock.cycle_tick(CB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(CB_opcode_cycles[opcode]);
 }
 
 void CPU :: RRC() {
@@ -1407,7 +1407,7 @@ void CPU :: RRC() {
         rg.set_flag(rg.Carry_flag, true);
     }
 
-    clock.cycle_tick(CB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(CB_opcode_cycles[opcode]);
 }
 
 void CPU :: RL() {
@@ -1425,7 +1425,7 @@ void CPU :: RL() {
         rg.set_flag(rg.Carry_flag, true);
     }
 
-    clock.cycle_tick(CB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(CB_opcode_cycles[opcode]);
 }
 
 void CPU :: RR() {
@@ -1443,7 +1443,7 @@ void CPU :: RR() {
         rg.set_flag(rg.Carry_flag, true);
     }
 
-    clock.cycle_tick(CB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(CB_opcode_cycles[opcode]);
 }
 
 void CPU :: SLA() {
@@ -1461,7 +1461,7 @@ void CPU :: SLA() {
         rg.set_flag(rg.Carry_flag, true);
     }
 
-    clock.cycle_tick(CB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(CB_opcode_cycles[opcode]);
 }
 
 void CPU :: SRA() {
@@ -1479,7 +1479,7 @@ void CPU :: SRA() {
         rg.set_flag(rg.Carry_flag, true);
     }
     
-    clock.cycle_tick(CB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(CB_opcode_cycles[opcode]);
 }
 
 void CPU :: SWAP() {
@@ -1490,7 +1490,7 @@ void CPU :: SWAP() {
 
     register_val = (low_bits << 4) | high_bits; 
 
-    clock.cycle_tick(CB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(CB_opcode_cycles[opcode]);
 }
 
 void CPU :: SRL() {
@@ -1508,7 +1508,7 @@ void CPU :: SRL() {
         rg.set_flag(rg.Carry_flag, true);
     }
 
-    clock.cycle_tick(CB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(CB_opcode_cycles[opcode]);
 }
 
 void CPU :: BIT_b3_r8() {
@@ -1523,7 +1523,7 @@ void CPU :: BIT_b3_r8() {
     rg.set_flag(rg.Subtract_flag, false);
     rg.set_flag(rg.HalfCarry_flag, true);
 
-    clock.cycle_tick(CB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(CB_opcode_cycles[opcode]);
 }
 
 void CPU :: RES_b3_r8() {
@@ -1535,7 +1535,7 @@ void CPU :: RES_b3_r8() {
     register_val &= ~(1 << bit_idx);
     write_register(source, register_val);
 
-    clock.cycle_tick(CB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(CB_opcode_cycles[opcode]);
 }
 
 void CPU :: SET_b3_r8() {
@@ -1547,5 +1547,5 @@ void CPU :: SET_b3_r8() {
     register_val |= (1 < bit_idx);
     write_register(source, register_val);
 
-    clock.cycle_tick(CB_opcode_cycles[opcode]);
+    clock.get().cycle_tick(CB_opcode_cycles[opcode]);
 }

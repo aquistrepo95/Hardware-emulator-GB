@@ -144,13 +144,15 @@ class CPU {
 
         // mmu object
         std::reference_wrapper<MMU> mmu;
+        //MMU &mmu;
 
         // halt flag
         bool halt_flag = false;
         bool halt_bug  = false;
 
         // Emulator clock object
-        EmulatorClock& clock;
+        std::reference_wrapper<EmulatorClock> clock;
+        //EmulatorClock& clock;
 
         // Interupt Master Enable flag
         bool IME_flag = false;
