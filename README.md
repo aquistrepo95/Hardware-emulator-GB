@@ -6,7 +6,7 @@
 * Showcases CPU(Central Processing Unit) emulation.
 * Showcases MMU(Memory Management Unit) emulation. 
 * Showcases MBC(Memory Block Controller) emulation.
-* Showcases PPU(Pixel Processing Unit) emulation.
+* Showcases PPU(Picture Processing Unit) emulation.
 * Showcases APU(Audio Processing Unit) emulation.
 * Showcases MMIO(Memory-Mapped IO) operations.
 * Showcases Timers
@@ -14,4 +14,4 @@
 
 
 
-* NB: I have currently completed the MMU(may be subject to change), MBC, MBC bus(C++ abstract class), and the System Bus(C++ abstract class)
+* NB: I have currently completed the CPU, MMU, MBC, MBC bus(C++ abstract class), and the System Bus(C++ abstract class)
