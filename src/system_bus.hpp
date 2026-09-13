@@ -16,8 +16,8 @@ class SystemBus {
         virtual void write_to_IO(u16 address, u8 value) = 0;
 
         // read and write to MMU
-        virtual u8 read_bytes(u16 address) const = 0;
-        virtual void write_bytes(u16 address, u8 value) = 0;
+        virtual u8 read_from_bytes(u16 address) const = 0;
+        virtual void write_to_bytes(u16 address, u8 value) = 0;
 };
 
 
