@@ -2,7 +2,7 @@
 #include "CPU.hpp"
 
 // constructor
-CPU :: CPU(MMU& m, EmulatorClock& c) : mmu(m), clock(c) {
+CPU :: CPU(std::reference_wrapper<MMU> m, std::reference_wrapper<EmulatorClock> c) : mmu(m), clock(c) {
     // initialize the program counter and the stack pointer 
     rg.program_counter = 0x0100;
     rg.stack_pointer   = 0xfffe;

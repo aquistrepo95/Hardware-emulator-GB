@@ -162,7 +162,7 @@ class CPU {
     public:
 
         // constructor 
-        CPU(MMU& m, EmulatorClock& c);
+        CPU(std::reference_wrapper<MMU> m, std::reference_wrapper<EmulatorClock> c);
 
         // cpu cycle 
         void CPU_cycle();
