@@ -8,6 +8,9 @@
 #include <functional>
 #include "system_bus.hpp"
 #include "MBC_bus.hpp"
+#include "PPU.hpp"
+#include "APU.hpp"
+#include "Timer.hpp"
 
 class MMU : public SystemBus {
     private:
@@ -29,12 +32,18 @@ class MMU : public SystemBus {
         // IO device vector
         std::vector<std::reference_wrapper<SystemBus>> IO_devices;
 
+        // IO device reference to the PPU,APU,Timer,Joypad
+        std::reference_wrapper<PPU> ppu_mmu;
+        std::reference_wrapper<APU> apu_mmu;
+        std::reference_wrapper<Timer> timer_mmu;
+        //std::reference_wrapper<Joypad> joypad_mmu;
+
         // pointer to the MBC
         std::unique_ptr<MBC_bus> mbc1;
 
     public:
         //constructor
-        MMU() = default;
+        MMU(std::reference_wrapper<PPU> ppu, std::reference_wrapper<APU> apu, std::reference_wrapper<Timer> timer);
 
         // disable the boot ROM
         void disable_bootROM();
@@ -49,8 +58,8 @@ class MMU : public SystemBus {
         void save_eram();
 
         // getter and setter(read and write)
-        u8 read_from_bytes(u16 address) const;
-        void write_to_bytes(u16 address, u8 value);
+        virtual u8 read_from_bytes(u16 address) const override;
+        virtual void write_to_bytes(u16 address, u8 value) override;
 
         // verify interrupts
         bool pending_interrupts() const;
@@ -60,9 +69,6 @@ class MMU : public SystemBus {
             IO_devices.push_back(std::ref(IO_device));
         }
 
-        // PPU read and write functions
-        virtual u8 read_bytes(u16 address) const override;
-        virtual void write_bytes(u16 address, u8 value) override;
 };
 
 #endif //MMU_HPP

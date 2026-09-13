@@ -3,6 +3,18 @@
 #include <filesystem>
 #include "MMU.hpp"
 
+// constructor
+MMU :: MMU(std::reference_wrapper<PPU> ppu, std::reference_wrapper<APU> apu, std::reference_wrapper<Timer> timer) : ppu_mmu(ppu), apu_mmu(apu), timer_mmu(timer) {
+    // create a MBC1 object
+    //mbc1 = std::make_unique<MBC1>();
+    
+    // add IO devices to the vector
+    IO_devices.push_back(ppu_mmu);
+    IO_devices.push_back(apu_mmu);
+    IO_devices.push_back(timer_mmu);
+    // add more IO devices here
+}
+
 // disable the boot rom
 void MMU :: disable_bootROM() {
     boot_rom_mapped = false;
@@ -138,6 +150,16 @@ void MMU :: save_eram() {
 
 // reads
 u8 MMU :: read_from_bytes(u16 address) const {
+    // Ignore reads if DMA transfer is in progress
+    if(ppu_mmu.get().is_oam_dma_running()) {
+        // check if the address is in the HRAM range (0xFF80 - 0xFFFE)
+        if(address >= 0xff80 && address <= 0xfffe) {
+            return hram[address - 0xff80];
+        }
+
+        return 0xff;
+    }
+
     // boot rom i.e nintendo logo
     if(boot_rom_mapped == true && address >= 0x0000 && address <= 0x0100) {
         return 0xff;
@@ -219,6 +241,16 @@ u8 MMU :: read_from_bytes(u16 address) const {
 
 // Writes
 void MMU :: write_to_bytes(u16 address, u8 value) {
+    // Ignore writes if DMA transfer is in progress
+    if(ppu_mmu.get().is_oam_dma_running()) {
+        // check if the address is in the HRAM range (0xFF80 - 0xFFFE)
+        if(address >= 0xff80 && address <= 0xfffe) {
+            hram[address - 0xff80] = value;
+        }
+
+        return;
+    }
+
     // ROM banks
     if(address >= 0x0000 && address <= 0x7fff) {
         if(mbc1) {
@@ -296,14 +328,4 @@ bool MMU :: pending_interrupts() const {
     u8 interrupt_enabled_ = read_from_bytes(0xffff);
 
     return (interrupt_flag_ & interrupt_enabled_ & 0x1F) != 0;
-}
-
-// read MMU from IO 
-u8 MMU :: read_bytes(u16 address) const {
-    
-}
-
-// write to MMU from IO
-void MMU :: write_bytes(u16 address, u8 value) {
-    
 }
