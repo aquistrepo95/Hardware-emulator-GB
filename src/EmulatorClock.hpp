@@ -15,7 +15,6 @@ class EmulatorClock {
         //APU& apu; // define these later i.e I havent written PPU and APU classes yet
 
     public:
-    
     EmulatorClock(Timer& timer, PPU& ppu); // add ppu and apu shortly
     bool cycle_tick(u32 cycles);
 };

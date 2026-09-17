@@ -8,7 +8,6 @@ class PPU : public SystemBus {
     private:
     std::array<u8, 0xA0> oam{};
     std::array<u8, 0x2000> vram{};
-    //std::array<u8, 0x80> io{};
 
     struct PPU_registers{ // ff40 - ff4b
         u8 lcdc = 0x91; // ff40: LCD control
@@ -25,17 +24,28 @@ class PPU : public SystemBus {
         u8 wx   = 0x00; // ff4b: window x position
 
         // tracking oam_dma operations
-        bool is_oam_dma_active_ = false;
-        u16 dma_source_address  = 0x0000;
-        u16 oam_dma_offset      = 0;
+        bool is_oam_dma_active_  = false;
+        u16 dma_source_address   = 0x0000;
+        u16 oam_dma_offset       = 0; // count the current number of bytes copied during the OAM DMA transfer(total: 160 bytes)
+        u8  delay_dma_oam        = 4;
+        int oam_dma_bytes_copied = 0;
     };
 
     // PPU object
     PPU_registers PPU_rg;
 
+    // System bus object
+    std::reference_wrapper<SystemBus> system_bus;
+
+    // track scanline count
+    int scanline_counter = 0;
+
+    // window line counter
+    int window_line_counter = 0;
+
     public:
     // constructor
-    PPU();
+    PPU(SystemBus& bus);
 
     // respond if address id within PPU range
     bool respond_to_operation(u16 address) const override;
@@ -44,13 +54,19 @@ class PPU : public SystemBus {
     virtual u8 read_from_IO(u16 address) override;
 
     // write to PPU using system_bus
-    virtual void write_to_IO(u16 address, u8 value);
+    virtual void write_to_IO(u16 address, u8 value) override;
 
     // OAM DMA transfer
     void DMA_OAM_copy(u8 value);
 
     // PPU cycle
     void cycle_tick(u32 cycles);
+
+    // update mode PPU mode based on the current scanline and cycle count
+    void update_mode();
+
+    // verify if OAM DMA transfer is active
+    bool is_oam_dma_running() const;
 };
 
 #endif //PPU_HPP
