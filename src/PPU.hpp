@@ -43,6 +43,13 @@ class PPU : public SystemBus {
     // window line counter
     int window_line_counter = 0;
 
+    // frame buffer for rendering
+    std::array<std::array<u8, 160>, 144> frame_front{};
+    std::array<std::array<u8, 160>, 144> frame_back{};
+
+    // frame ready flag
+    bool frame_ready = false;    
+
     public:
     // constructor
     PPU(SystemBus& bus);
@@ -65,8 +72,24 @@ class PPU : public SystemBus {
     // update mode PPU mode based on the current scanline and cycle count
     void update_mode();
 
+    // draw scanline: render the current scanline based on the PPU registers and memory
+    void draw_scanline();
+
     // verify if OAM DMA transfer is active
     bool is_oam_dma_running() const;
+
+    // swap the front and back frame buffers for rendering
+    void swap_frame_buffers();
+
+    // getters for frame buffer to display
+    const std::array<std::array<u8, 160>, 144>& get_frame_buffer() const;
+
+    // check if the frame is ready for rendering
+    bool is_frame_ready() const;
+
+    // reset the frame ready flag after rendering
+    void reset_frame_ready();
+
 };
 
 #endif //PPU_HPP
