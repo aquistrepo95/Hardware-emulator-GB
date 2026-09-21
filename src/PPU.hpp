@@ -14,7 +14,7 @@ class PPU : public SystemBus {
         u8 stat = 0x85; // ff41: LCD status
         u8 scy  = 0x00; // ff42: scroll y
         u8 scx  = 0x00; // ff43: scroll x
-        u8 ly   = 0x00; // ff44: scanline
+        u8 ly   = 0x00; // ff44: scanline tracker
         u8 lyc  = 0x00; // ff45: scanline compare 
         u8 oam_dma  = 0xff; // ff46: DMA address start
         u8 bgp  = 0xfc; // ff47: palette
@@ -38,7 +38,7 @@ class PPU : public SystemBus {
     std::reference_wrapper<SystemBus> system_bus;
 
     // track scanline count
-    int scanline_counter = 0;
+    int current_scanline = 0;
 
     // window line counter
     int window_line_counter = 0;
@@ -48,7 +48,27 @@ class PPU : public SystemBus {
     std::array<std::array<u8, 160>, 144> frame_back{};
 
     // frame ready flag
-    bool frame_ready = false;    
+    bool frame_ready = false;   
+
+    // OAM sprite struct 4 bytes + 1 byte for the OAM index
+    struct OAM_sprite {
+        u8 y_position;
+        u8 x_position;
+        u8 tile_index;
+        u8 attributes;
+        u8 oam_idx;
+    }; 
+
+    // OAM sprite vector for the current scanline
+    std::vector<OAM_sprite> oam_sprites_current_scanline;
+
+    // color palette for rendering
+   const std::array<u32, 4> color_pallete = {
+        0xffffffff, // White
+        0xffaaaaaa, // Light Gray
+        0xff555555, // Dark Gray
+        0xff000000  // Black
+    };
 
     public:
     // constructor
@@ -74,6 +94,12 @@ class PPU : public SystemBus {
 
     // draw scanline: render the current scanline based on the PPU registers and memory
     void draw_scanline();
+
+    // draw sprites for the current scanline based on the OAM sprite vector
+    void draw_sprites_current_scanline();
+
+    // handle OAM sprites for the current scanline
+    void handle_oam_sprites();
 
     // verify if OAM DMA transfer is active
     bool is_oam_dma_running() const;
