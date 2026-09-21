@@ -77,7 +77,7 @@ class PPU : public SystemBus {
     // respond if address id within PPU range
     bool respond_to_operation(u16 address) const override;
 
-    // read from PPU using system_bus
+    // read from the MMU using system_bus
     virtual u8 read_from_IO(u16 address) override;
 
     // write to PPU using system_bus
