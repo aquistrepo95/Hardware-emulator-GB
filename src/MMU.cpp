@@ -177,14 +177,8 @@ u8 MMU :: read_from_bytes(u16 address) const {
     }
 
     // route video ram reads to the PPU
-    else if(address >= 0x8000 && address <= 0x9fff) {
-        for(auto device : IO_devices) {
-            if(device.get().respond_to_operation(address)) {
-                return device.get().read_from_IO(address);
-            }
-        }
-
-        return 0xff;
+    else if(address >= 0x8000 && address <= 0x9fff) { // comeback here
+        return ppu_mmu.get().read_from_IO(address);
     }
 
     // handle external ram reads
@@ -203,13 +197,7 @@ u8 MMU :: read_from_bytes(u16 address) const {
 
     // route OAM reads to the PPU
     else if(address >= 0xfe00 && address <= 0xfe9f) {
-        for(auto & device : IO_devices) {
-            if(device.get().respond_to_operation(address)) {
-                return device.get().read_from_IO(address);
-            }
-        }
-
-        return 0xff;
+        return ppu_mmu.get().read_from_IO(address);
     }
     
     // Unused Memory(prohibited)
@@ -260,11 +248,7 @@ void MMU :: write_to_bytes(u16 address, u8 value) {
 
     // route video ram writes to the PPU
     else if(address >= 0x8000 && address <= 0x9fff) {
-        for(auto & device : IO_devices) {
-            if(device.get().respond_to_operation(address)) {
-                device.get().write_to_IO(address, value);
-            }
-        }          
+        ppu_mmu.get().write_to_IO(address, value);          
     }
 
     // handle external ram writes
@@ -285,11 +269,7 @@ void MMU :: write_to_bytes(u16 address, u8 value) {
 
     // route OAM writes to the PPU
     else if(address >= 0xfe00 && address <= 0xfe9f) {
-        for(auto & device : IO_devices) {
-            if(device.get().respond_to_operation(address)) {
-                device.get().write_to_IO(address, value);
-            }
-        }        
+        ppu_mmu.get().write_to_IO(address, value);       
     }
 
     // Unuseable Memory(prohibited)
