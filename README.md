@@ -11,7 +11,4 @@
 * Showcases MMIO(Memory-Mapped IO) operations.
 * Showcases Timers
 * Showcases Emulator Clock
-
-
-
-* NB: I have currently completed the CPU, MMU, MBC, MBC bus(C++ abstract class), and the System Bus(C++ abstract class)
+* Showcase Joypad
