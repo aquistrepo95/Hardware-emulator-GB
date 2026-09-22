@@ -44,8 +44,8 @@ class PPU : public SystemBus {
     int window_line_counter = 0;
 
     // frame buffer for rendering
-    std::array<std::array<u8, 160>, 144> frame_front{};
-    std::array<std::array<u8, 160>, 144> frame_back{};
+    std::array<std::array<u32, 160>, 144> frame_front{};
+    std::array<std::array<u32, 160>, 144> frame_back{};
 
     // frame ready flag
     bool frame_ready = false;   
@@ -95,8 +95,11 @@ class PPU : public SystemBus {
     // draw scanline: render the current scanline based on the PPU registers and memory
     void draw_scanline();
 
+    // fetch the tile data for the current scanline based on the PPU registers and memory
+    u8 fetch_tile_data_current_scanline(u8, int, int, bool);
+
     // draw sprites for the current scanline based on the OAM sprite vector
-    void draw_sprites_current_scanline();
+    void draw_sprites_current_scanline(u8[]);
 
     // handle OAM sprites for the current scanline
     void handle_oam_sprites();
@@ -108,7 +111,7 @@ class PPU : public SystemBus {
     void swap_frame_buffers();
 
     // getters for frame buffer to display
-    const std::array<std::array<u8, 160>, 144>& get_frame_buffer() const;
+    const std::array<std::array<u32, 160>, 144>& get_frame_buffer() const;
 
     // check if the frame is ready for rendering
     bool is_frame_ready() const;
