@@ -99,7 +99,7 @@ class PPU : public SystemBus {
     u8 fetch_tile_data_current_scanline(u8, int, int, bool);
 
     // draw sprites for the current scanline based on the OAM sprite vector
-    void draw_sprites_current_scanline(u8[]);
+    void draw_sprites_current_scanline(const u8[]);
 
     // handle OAM sprites for the current scanline
     void handle_oam_sprites();

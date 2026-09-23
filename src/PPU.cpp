@@ -270,12 +270,9 @@ void PPU :: draw_scanline() {
 
                 curr_color_id = fetch_tile_data_current_scanline(tile_id, bg_x % 8, bg_y % 8, (PPU_rg.lcdc & 0x10) != 0); // fetch the tile data for the current scanline and background position
             }
-
-            bg_color_ids[x] = curr_color_id; // store the background color id for the current pixel
         }
 
-        bg_color_ids[x] = curr_color_id; // store the color id for the current pixel (background or window)
-
+        bg_color_ids[x] = curr_color_id; // store the background color id for the current pixel
         u8 palette_value = (PPU_rg.bgp >> (curr_color_id * 2)) & 0x03; // get the palette value for the current color id
         frame_back[PPU_rg.ly][x] = color_pallete[palette_value]; // comeback here
     }
@@ -306,6 +303,19 @@ u8 PPU :: fetch_tile_data_current_scanline(u8 tile_id, int x, int y, bool bg_win
     // extract the color id for the current pixel from the tile data
     int bit_index = 7 - x; // calculate the bit index for the current pixel
     u8 color_id = ((tile_data_high >> bit_index) & 0x01) << 1 | ((tile_data_low >> bit_index) & 0x01); 
+}
+
+// draw sprites for the current scanline based on the PPU registers and memory
+void PPU :: draw_sprites_current_scanline(const u8 bg_color_ids[]) {
+    // check the oam sprite size from the LCDC register (bit 2)
+    u8 sprite_height = (PPU_rg.lcdc & 0x04) ? 16 : 8;
+
+    // iterate through the visible sprites for the current scanline
+    for(std::size_t curr_sprite = 0; curr_sprite < oam_sprites_current_scanline.size(); curr_sprite++) {
+        const auto& sprite = oam_sprites_current_scanline[curr_sprite];
+
+        
+    }
 }
 
 // handle OAM sprites for the current scanline
