@@ -14,4 +14,4 @@
 * Showcase Joypad
 * SDL3 rendering
 
-Update: completed the CPU, MMU, MBC, Timers, Emulation Clock, and PPU. Testing with ROMs(test ROMs) is in progress(all components are subject to change during an after testing)
+Update: completed the CPU, MMU, MBC, Timers, Emulation Clock, and PPU. Testing with ROMs(test ROMs) is in progress(all components are subject to change during and after testing)
