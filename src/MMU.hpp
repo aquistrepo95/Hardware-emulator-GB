@@ -64,10 +64,13 @@ class MMU : public SystemBus {
         // verify interrupts
         bool pending_interrupts() const;
 
-        // function to add IO to IO_devices
+        /* 
+        function to add IO to IO_devices
+
         void add_IO_devices(SystemBus& IO_device) {
             IO_devices.push_back(std::ref(IO_device));
         }
+        */
 
 };
 
