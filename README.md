@@ -12,3 +12,5 @@
 * Showcases Timers
 * Showcases Emulator Clock
 * Showcase Joypad
+
+Update: completed the CPU, MMU, MBC, Timers, Emulation Clock, and PPU. Testing with ROMs(test ROMs) is in progress to resolve bugs, so all components are subject to change.
