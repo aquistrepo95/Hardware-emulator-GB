@@ -303,6 +303,8 @@ u8 PPU :: fetch_tile_data_current_scanline(u8 tile_id, int x, int y, bool bg_win
     // extract the color id for the current pixel from the tile data
     int bit_index = 7 - x; // calculate the bit index for the current pixel
     u8 color_id = ((tile_data_high >> bit_index) & 0x01) << 1 | ((tile_data_low >> bit_index) & 0x01); 
+
+    return color_id;
 }
 
 // draw sprites for the current scanline based on the PPU registers and memory
@@ -314,7 +316,70 @@ void PPU :: draw_sprites_current_scanline(const u8 bg_color_ids[]) {
     for(std::size_t curr_sprite = 0; curr_sprite < oam_sprites_current_scanline.size(); curr_sprite++) {
         const auto& sprite = oam_sprites_current_scanline[curr_sprite];
 
-        
+        // attributes for the current sprite
+        bool sprite_x_flip   = (sprite.attributes & 0x20) != 0; // check if the sprite is flipped horizontally
+        bool sprite_y_flip   = (sprite.attributes & 0x40) != 0; // check if the sprite is flipped vertically
+        bool sprite_priority = (sprite.attributes & 0x80) != 0; // check if the sprite has priority over the background
+
+        // get palette for the current sprite based on the attributes
+        u8 palette = (sprite.attributes & 0x10) ? PPU_rg.obp1 : PPU_rg.obp0;
+
+        // find the y position of the sprite relative to the current scanline
+        int sprite_y_relative = PPU_rg.ly - (sprite.y_position - 16);
+
+        // handle vertical flipping of the sprite
+        if(sprite_y_flip) {
+            sprite_y_relative = (sprite_height - 1) - sprite_y_relative;
+        }
+
+        // handle 8x16 sprites 
+        u8 target_tile_idx = sprite.tile_index;
+        if(sprite_height == 16) {
+            if(sprite_y_relative < 8) {
+                // based on the GB spec, the LSB(least significant bit) of the upper byte is ignored(even tile index) for 8x16 sprites
+                target_tile_idx &= 0xfe;
+            }
+            else{
+                // turn on the LSB of the upper byte(odd tile index) to get the second tile for the 8x16 sprite
+                target_tile_idx |= 0x01;
+                // ensure sprite_y_relative is within 0 - 7 range for 8x16 sprites
+                sprite_y_relative -= 8;
+
+            }
+        }
+
+        // loop through the current row and draw the 8 pixels(8 pixels per row)
+        for(int x = 0; x < 8; ++x) {
+            int position_x_screen = (sprite.x_position - 8) + x; // calculate the x position of the pixel on the scanline
+
+            // check if the pixel is within the visible range of the screen (0-159)
+            if(position_x_screen < 0 || position_x_screen >= 160) {
+                continue; 
+            }
+
+            // handle horizontal flipping of the sprite
+            int sprite_x_relative = sprite_x_flip ? (7 - x) : x;
+
+            // fetch the color id for the current pixel from the tile data
+            u8 color_id = fetch_tile_data_current_scanline(target_tile_idx, sprite_x_relative, sprite_y_relative, (PPU_rg.lcdc & 0x10) != 0);
+
+            // check if the color id is not 0 (transparent)
+            if(color_id == 0) {
+                continue; // skip transparent pixels
+            }
+
+            // check if the sprite has priority over the background
+            if(sprite_priority && bg_color_ids[position_x_screen] != 0) {
+                continue; // skip if the background pixel is not transparent and the sprite has priority
+            }
+
+            // get the palette value for the current color id
+            u8 palette_value = (palette >> (color_id * 2)) & 0x03;
+
+            // set the pixel color in the back buffer for the current scanline
+            frame_back[PPU_rg.ly][position_x_screen] = color_pallete[palette_value]; // comeback here
+
+        }
     }
 }
 
