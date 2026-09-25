@@ -54,18 +54,18 @@ void PPU :: write_to_IO(u16 address, u8 value) {
 
     // IO registers
     switch(address) {
-        case 0xff40: PPU_rg.lcdc = value; break;
-        case 0xff41: PPU_rg.stat = (value & 0xf8) | (PPU_rg.stat & 0x07); break; // 
-        case 0xff42: PPU_rg.scy  = value; break;
-        case 0xff43: PPU_rg.scx  = value; break;
+        case 0xff40: PPU_rg.lcdc    = value; break;
+        case 0xff41: PPU_rg.stat    = (value & 0xf8) | (PPU_rg.stat & 0x07); break; // 
+        case 0xff42: PPU_rg.scy     = value; break;
+        case 0xff43: PPU_rg.scx     = value; break;
         case 0xff44: break;
-        case 0xff45: PPU_rg.lyc  = value; break;
+        case 0xff45: PPU_rg.lyc     = value; break;
         case 0xff46: PPU_rg.oam_dma = value; DMA_OAM_copy(value); break; // starts DMA transfer from ROM/RAM to OAM
-        case 0xff47: PPU_rg.bgp  = value; break;
-        case 0xff48: PPU_rg.obp0 = value; break;
-        case 0xff49: PPU_rg.obp1 = value; break;
-        case 0xff4a: PPU_rg.wy   = value; break;
-        case 0xff4b: PPU_rg.wx   = value; break;
+        case 0xff47: PPU_rg.bgp     = value; break;
+        case 0xff48: PPU_rg.obp0    = value; break;
+        case 0xff49: PPU_rg.obp1    = value; break;
+        case 0xff4a: PPU_rg.wy      = value; break;
+        case 0xff4b: PPU_rg.wx      = value; break;
         default: break;
     }
 }
@@ -74,8 +74,8 @@ void PPU :: write_to_IO(u16 address, u8 value) {
 void PPU :: DMA_OAM_copy(u8 value) {
     PPU_rg.is_oam_dma_active_ = true; // set the flag to indicate that the OAM DMA transfer is active
     PPU_rg.dma_source_address = static_cast<u16>(value) << 8; // set the source address for the DMA transfer (shift bits to represent value * 0x100)
-    PPU_rg.oam_dma_offset = 0; // reset the offset for the OAM DMA transfer
-    PPU_rg.delay_dma_oam = 4; // set the delay for the OAM DMA transfer (4 T-cycles)
+    PPU_rg.oam_dma_bytes_copied = 0; // reset the number of bytes copied during the OAM DMA transfer
+    PPU_rg.delay_dma_oam        = 4; // set the delay for the OAM DMA transfer (4 T-cycles)
 }
 
 // PPU cycle
@@ -90,8 +90,8 @@ void PPU :: cycle_tick(u32 cycles) {
                 PPU_rg.delay_dma_oam = 0;
             } else {
                 PPU_rg.delay_dma_oam -= current_cycle_in_progress;
-                return; // comeback here
-                // current_cycle_in_progress = 0;
+                current_cycle_in_progress = 0;
+                //return;
             }
         }
 
@@ -101,8 +101,7 @@ void PPU :: cycle_tick(u32 cycles) {
             if(PPU_rg.oam_dma_bytes_copied < 160) {
                 u16 source_address = PPU_rg.dma_source_address + PPU_rg.oam_dma_bytes_copied;
                 u8 data = system_bus.get().read_from_bytes(source_address);
-                oam[PPU_rg.oam_dma_bytes_copied] = data;
-                PPU_rg.oam_dma_bytes_copied++;
+                oam[PPU_rg.oam_dma_bytes_copied++] = data;
                 current_cycle_in_progress -= 4;
             }
             else {
@@ -123,9 +122,9 @@ void PPU :: cycle_tick(u32 cycles) {
         // increment LY register(count for the number of scanlines rendered in the current frame)
         PPU_rg.ly++;
 
-        // reset LY register if it exceeds 153 
+        // reset LY register if it exceeds 153 i.e 154 scanlines have been rendered (0-153)
         if(PPU_rg.ly > 153) {
-            PPU_rg.ly = 0; // set LY register to 0 for the next frame
+            PPU_rg.ly = 0;
 
             // swap the front and back frame buffers for rendering
             swap_frame_buffers();
@@ -183,7 +182,6 @@ void PPU :: update_mode() {
 
         // handle OAM scanline rendering when entering OAM mode (mode 2: OAM search)
         if(new_mode == 2) {
-            // handle OAM scanline rendering for the current scanline
             handle_oam_sprites();
         }
 
@@ -388,16 +386,21 @@ void PPU :: handle_oam_sprites() {
     // clear the vector of OAM sprites for the current scanline
     oam_sprites_current_scanline.clear();
 
-    // get the sprite height from the LCDC register (bit 2)
+    // get the sprite height from the LCDC register (bit 2) i.e 8x8 or 8x16 sprites
     u8 sprite_height = (PPU_rg.lcdc & 0x04) ? 16 : 8;
 
-    // iterate through the OAM memory to find sprites that are visible on the current scanline
+    // iterate through the OAM memory to find sprites that are visible on the current scanline(every sprite takes 4 bytes in OAM memory)
     for(int x = 0; x < 40; x++) {
-        u8 sprite_y = oam[x * 4]; // get the y position of the sprite
-        u8 sprite_x = oam[x * 4 + 1]; // get the x position of the sprite
+        u8 sprite_y = oam[x * 4]; // get the y position of the sprite(rows)
+        u8 sprite_x = oam[x * 4 + 1]; // get the x position of the sprite(columns)
 
-        // check if the sprite is visible on the current scanline
-        if(PPU_rg.ly >= (sprite_y - 16) && PPU_rg.ly < (sprite_y - 16 + sprite_height)) {
+        // convert sprite y, PPU_rg.ly, and sprite_height to signed int
+        int sprite_y_signed = static_cast<int>(sprite_y);
+        int ly_signed = static_cast<int>(PPU_rg.ly) - 16;
+        int sprite_height_signed = static_cast<int>(sprite_height);
+
+        // check if the sprite is visible in the current scanline(compares top and bottom of the sprite with the current scanline)
+        if(ly_signed >= sprite_y_signed && ly_signed < (sprite_y_signed + sprite_height_signed)) {
             OAM_sprite sprite;
             sprite.y_position = sprite_y;
             sprite.x_position = sprite_x;
@@ -420,13 +423,15 @@ void PPU :: handle_oam_sprites() {
         if(a.x_position == b.x_position) {
             return a.oam_idx > b.oam_idx;
         }
-        return a.x_position > b.x_position;
+        else {
+            return a.x_position > b.x_position;
+        } 
     });
 }
 
 // check if OAM DMA transfer is active
 bool PPU :: is_oam_dma_running() const {
-    return PPU_rg.is_oam_dma_active_;
+    return PPU_rg.is_oam_dma_active_ && PPU_rg.delay_dma_oam == 0;
 }
 
 // swap the front and back frame buffers for rendering
