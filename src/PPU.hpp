@@ -26,7 +26,6 @@ class PPU : public SystemBus {
         // tracking oam_dma operations
         bool is_oam_dma_active_  = false;
         u16 dma_source_address   = 0x0000;
-        u16 oam_dma_offset       = 0; // count the current number of bytes copied during the OAM DMA transfer(total: 160 bytes)
         u8  delay_dma_oam        = 4;
         int oam_dma_bytes_copied = 0;
     };
