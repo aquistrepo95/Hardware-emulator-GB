@@ -185,9 +185,9 @@ void PPU :: update_mode() {
             handle_oam_sprites();
         }
 
-        // handle pixel generation and window line counter increment when entering HBlank mode (mode 0: current scanline rendering is complete)
+        // handle mode 0 (HBlank) pixel generation and window line counter increment
         if(new_mode == 0) {
-            // handle pixel generation for the current scanline and update the back buffer
+            // draw the current scanline
             draw_scanline();
             
             // window line counter increment
@@ -231,7 +231,7 @@ void PPU :: draw_scanline() {
         return;
     }
 
-    // store bg and window color ids for the current scanline
+    // store bg/window color ids for the current scanline
     u8 bg_color_ids[160]{};
 
     // gather background and window enabled flags from the LCDC register
@@ -250,10 +250,10 @@ void PPU :: draw_scanline() {
             // window
             if(render_window) {
                 int window_x = x + 7 - PPU_rg.wx; // calculate the window x position
-                int window_y = window_line_counter; // use the window line counter for the y position
+                int window_y = window_line_counter; // use the window line counter for the window y position
 
-                u16 tile_map = (PPU_rg.lcdc & 0x40) ? 0x9c00 : 0x9800; // window tile map base address
-                u16 tile_map_addr = tile_map + ((window_y / 8) * 32) + (window_x / 8); // calculate the tile map address for the window
+                u16 tile_map_area = (PPU_rg.lcdc & 0x40) ? 0x9c00 : 0x9800; // window tile map base address
+                u16 tile_map_addr = tile_map_area + ((window_y / 8) * 32) + (window_x / 8); // calculate the tile map address for the window
                 u8  tile_id = read_from_IO(tile_map_addr); // read the tile index from VRAM
 
                 curr_color_id = fetch_tile_data_current_scanline(tile_id, window_x % 8, window_y % 8, (PPU_rg.lcdc & 0x10) != 0); // fetch the tile data for the current scanline and window position
@@ -375,8 +375,7 @@ void PPU :: draw_sprites_current_scanline(const u8 bg_color_ids[]) {
             u8 palette_value = (palette >> (color_id * 2)) & 0x03;
 
             // set the pixel color in the back buffer for the current scanline
-            frame_back[PPU_rg.ly][position_x_screen] = color_pallete[palette_value]; // comeback here
-
+            frame_back[PPU_rg.ly][position_x_screen] = color_pallete[palette_value]; 
         }
     }
 }
