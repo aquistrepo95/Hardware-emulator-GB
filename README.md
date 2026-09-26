@@ -15,3 +15,5 @@
 * SDL3 rendering
 
 Update: completed the CPU, MMU, MBC, Timers, Emulation Clock, and PPU. Testing with ROMs(test ROMs) is in progress(all components are subject to change during and after testing)
+
+The goal is to keep the design as flat as possible(i.e no unnecessary classes or branching)
