@@ -4,13 +4,13 @@
 #include "MMU.hpp"
 
 // constructor
-MMU :: MMU(std::reference_wrapper<PPU> ppu, std::reference_wrapper<APU> apu, std::reference_wrapper<Timer> timer) : ppu_mmu(ppu), apu_mmu(apu), timer_mmu(timer) {
+MMU :: MMU(std::reference_wrapper<PPU> ppu, std::reference_wrapper<Timer> timer) : ppu_mmu(ppu), timer_mmu(timer) {
     // create a MBC1 object
     //mbc1 = std::make_unique<MBC1>();
     
     // add IO devices to the vector
-    IO_devices.push_back(ppu_mmu);
-    IO_devices.push_back(apu_mmu);
+    //IO_devices.push_back(ppu_mmu); circular reference issue
+    //IO_devices.push_back(apu_mmu); circular reference issue
     IO_devices.push_back(timer_mmu);
     // add more IO devices here
 }

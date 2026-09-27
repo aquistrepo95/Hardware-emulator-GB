@@ -34,7 +34,7 @@ class MMU : public SystemBus {
 
         // IO device reference to the PPU,APU,Timer,Joypad
         std::reference_wrapper<PPU> ppu_mmu;
-        std::reference_wrapper<APU> apu_mmu;
+        //std::reference_wrapper<APU> apu_mmu;
         std::reference_wrapper<Timer> timer_mmu;
         //std::reference_wrapper<Joypad> joypad_mmu;
 
@@ -43,7 +43,8 @@ class MMU : public SystemBus {
 
     public:
         //constructor
-        MMU(std::reference_wrapper<PPU> ppu, std::reference_wrapper<APU> apu, std::reference_wrapper<Timer> timer);
+        MMU(std::reference_wrapper<PPU> ppu, std::reference_wrapper<Timer> timer);
+         //std::reference_wrapper<APU> apu,
 
         // disable the boot ROM
         void disable_bootROM();
