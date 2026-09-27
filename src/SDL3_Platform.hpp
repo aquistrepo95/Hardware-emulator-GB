@@ -10,11 +10,11 @@ class SDL3Platform {
 
         static constexpr int gb_width  = 160;
         static constexpr int gb_height = 144;
-        int scale     = 10;
+        int scale = 10;
 
     public:
         // constructor and destructor
-        SDL3Platform();
+        SDL3Platform() = default;
         ~SDL3Platform();
 
         // delete copy constructor and assignment operator
@@ -22,8 +22,8 @@ class SDL3Platform {
         SDL3_platform& operator=(const SDL3_platform&) = delete;
 
         // initialize SDL3, create window, renderer, and texture
-        void init();
-        void render_frame(const std::array<std::array<u32, gb_width>, gb_height>& frame_buffer);
+        bool init();
+        void render_frame(const uint32_t* frame_buffer);
         void handle_events(bool& running);
 
 };
