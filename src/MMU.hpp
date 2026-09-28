@@ -59,10 +59,12 @@ class MMU : public SystemBus {
         // stop and save the ram state
         void save_eram();
 
-        // getter and setter(read and write)
-        virtual u8 read_from_bytes(u16 address) const override;
-        virtual void write_to_bytes(u16 address, u8 value) override;
-        virtual u8 read_from_bytes_dma(u16 address) override;
+        // SystemBus interface implementation
+        u8 read_from_bytes(u16 address) const override;
+        void write_to_bytes(u16 address, u8 value) override;
+        u8 read_from_bytes_dma(u16 address) const override;
+        u8 read_from_IO(u16 address) override;
+        void write_to_IO(u16 address, u8 value) override;
 
         // verify interrupts
         bool pending_interrupts() const;

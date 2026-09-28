@@ -5,9 +5,9 @@
 
 class MBC1 : public MBC_bus{
     private:
-        std::uint8_t  two_bit_register  = 0; // 2 bit register
-        std::uint8_t  five_bit_register = 1; // 5 bit register
-        std::uint8_t bank_mode_register = 0; // rom mode = 0 || eram mode = 1
+        u8  two_bit_register   = 0; // 2 bit register
+        u8  five_bit_register  = 1; // 5 bit register
+        u8  bank_mode_register = 0; // rom mode = 0 || eram mode = 1
 
         void calculate_offsets();
 
@@ -16,7 +16,7 @@ class MBC1 : public MBC_bus{
         using MBC_bus :: MBC_bus;
 
         // function to find banks
-        void calculate_and_find_banks(std::uint16_t address, std::uint8_t value) override;
+        void calculate_and_find_banks(u16 address, u8 value) override;
 
 };
 

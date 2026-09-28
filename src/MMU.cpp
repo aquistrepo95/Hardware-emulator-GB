@@ -228,7 +228,7 @@ u8 MMU :: read_from_bytes(u16 address) const {
 }
 
 // reads for DMA transfer after lockout i.e acts as a backdoor during OAM DMA transfers
-u8 MMU :: read_from_bytes_dma(u16 address) {
+u8 MMU :: read_from_bytes_dma(u16 address) const {
     if(address >= 0xc000 && address <= 0xfdff) {
         return wram[(address - 0xc000) % 0x2000]; 
     }   

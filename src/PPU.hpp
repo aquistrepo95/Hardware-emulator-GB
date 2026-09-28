@@ -73,14 +73,13 @@ class PPU : public SystemBus {
     // constructor
     PPU(SystemBus& bus);
 
-    // respond if address id within PPU range
+    // SystemBus interface implementation
     bool respond_to_operation(u16 address) const override;
-
-    // read from the MMU using system_bus
-    virtual u8 read_from_IO(u16 address) override;
-
-    // write to PPU using system_bus
-    virtual void write_to_IO(u16 address, u8 value) override;
+    u8 read_from_IO(u16 address) override;
+    void write_to_IO(u16 address, u8 value) override;
+    u8 read_from_bytes(u16 address) const override;
+    void write_to_bytes(u16 address, u8 value) override;
+    u8 read_from_bytes_dma(u16 value) const override;
 
     // OAM DMA transfer
     void DMA_OAM_copy(u8 value);

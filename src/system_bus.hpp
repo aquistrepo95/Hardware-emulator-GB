@@ -20,7 +20,7 @@ class SystemBus {
         virtual void write_to_bytes(u16 address, u8 value) = 0;
 
         // DMA OAM transfer backdoor
-        virtual u8 read_from_bytes_dma(u16 value) = 0;
+        virtual u8 read_from_bytes_dma(u16 value) const = 0;
 };
 
 
