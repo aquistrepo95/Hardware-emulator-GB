@@ -100,7 +100,7 @@ void PPU :: cycle_tick(u32 cycles) {
             // copying 160 bytes from source address to OAM
             if(PPU_rg.oam_dma_bytes_copied < 160) {
                 u16 source_address = PPU_rg.dma_source_address + PPU_rg.oam_dma_bytes_copied;
-                u8 data = system_bus.get().read_from_bytes(source_address);
+                u8 data = system_bus.get().read_from_bytes_dma(source_address);
                 oam[PPU_rg.oam_dma_bytes_copied++] = data;
                 current_cycle_in_progress -= 4;
             }
@@ -440,8 +440,8 @@ void PPU :: swap_frame_buffers() {
 }
 
 // getter for frame buffer to display
-const std::array<std::array<u32, 160>, 144>& PPU :: get_frame_buffer() const {
-    return frame_front;
+const u32* PPU :: get_frame_buffer() const {
+    return reinterpret_cast<const u32*>(frame_front.data());
 }
 
 // check if the frame is ready for rendering

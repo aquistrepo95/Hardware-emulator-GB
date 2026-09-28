@@ -45,6 +45,7 @@ class MMU : public SystemBus {
         //constructor
         MMU(std::reference_wrapper<PPU> ppu, std::reference_wrapper<Timer> timer);
          //std::reference_wrapper<APU> apu,
+         //std::reference_wrapper<APU> joypad
 
         // disable the boot ROM
         void disable_bootROM();
@@ -61,6 +62,7 @@ class MMU : public SystemBus {
         // getter and setter(read and write)
         virtual u8 read_from_bytes(u16 address) const override;
         virtual void write_to_bytes(u16 address, u8 value) override;
+        virtual u8 read_from_bytes_dma(u16 address) override;
 
         // verify interrupts
         bool pending_interrupts() const;

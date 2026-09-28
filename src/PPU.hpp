@@ -110,7 +110,7 @@ class PPU : public SystemBus {
     void swap_frame_buffers();
 
     // getters for frame buffer to display
-    const std::array<std::array<u32, 160>, 144>& get_frame_buffer() const;
+    const u32* get_frame_buffer() const;
 
     // check if the frame is ready for rendering
     bool is_frame_ready() const;

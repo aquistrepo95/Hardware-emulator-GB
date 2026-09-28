@@ -9,10 +9,10 @@ MMU :: MMU(std::reference_wrapper<PPU> ppu, std::reference_wrapper<Timer> timer)
     //mbc1 = std::make_unique<MBC1>();
     
     // add IO devices to the vector
-    //IO_devices.push_back(ppu_mmu); circular reference issue
-    //IO_devices.push_back(apu_mmu); circular reference issue
+    IO_devices.push_back(ppu_mmu);
+    //IO_devices.push_back(apu_mmu); 
     IO_devices.push_back(timer_mmu);
-    // add more IO devices here
+    //IO_device.push_back(joypad_mmu);
 }
 
 // disable the boot rom
@@ -225,6 +225,13 @@ u8 MMU :: read_from_bytes(u16 address) const {
     else if(address == 0xffff) {    
         return ie;
     }
+}
+
+// reads for DMA transfer after lockout i.e acts as a backdoor during OAM DMA transfers
+u8 MMU :: read_from_bytes_dma(u16 address) {
+    if(address >= 0xc000 && address <= 0xfdff) {
+        return wram[(address - 0xc000) % 0x2000]; 
+    }   
 }
 
 // Writes
