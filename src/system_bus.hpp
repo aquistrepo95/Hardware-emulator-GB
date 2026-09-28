@@ -18,6 +18,9 @@ class SystemBus {
         // read and write to MMU
         virtual u8 read_from_bytes(u16 address) const = 0;
         virtual void write_to_bytes(u16 address, u8 value) = 0;
+
+        // DMA OAM transfer backdoor
+        virtual u8 read_from_bytes_dma(u16 value) = 0;
 };
 
 
