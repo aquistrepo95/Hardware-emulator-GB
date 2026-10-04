@@ -60,6 +60,7 @@ class MMU : public SystemBus {
         void save_eram();
 
         // SystemBus interface implementation
+        bool respond_to_operation(u16 address) const override;
         u8 read_from_bytes(u16 address) const override;
         void write_to_bytes(u16 address, u8 value) override;
         u8 read_from_bytes_dma(u16 address) const override;
