@@ -1,6 +1,7 @@
 #ifndef PPU_HPP
 #define PPU_HPP
 #include <array>
+#include <functional>
 #include "types.hpp"
 #include "system_bus.hpp"
 
@@ -71,7 +72,7 @@ class PPU : public SystemBus {
 
     public:
     // constructor
-    PPU(SystemBus& bus);
+    PPU(std::reference_wrapper<SystemBus> bus);
 
     // SystemBus interface implementation
     bool respond_to_operation(u16 address) const override;

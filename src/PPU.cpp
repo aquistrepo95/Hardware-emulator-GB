@@ -1,7 +1,7 @@
 #include <iostream>
 #include "PPU.hpp"
 
-PPU :: PPU(SystemBus& bus) : system_bus(bus) {
+PPU :: PPU(std::reference_wrapper<SystemBus> bus) : system_bus(bus) {
 }
 
 bool PPU :: respond_to_operation(u16 address) const {
