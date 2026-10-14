@@ -1,7 +1,7 @@
 #include "EmulatorClock.hpp" 
 
 
-EmulatorClock :: EmulatorClock(Timer& t, PPU& p) : timer(t), ppu(p) {}
+EmulatorClock :: EmulatorClock(Timer& timer, PPU& ppu, APU& apu) : timer(timer), ppu(ppu), apu(apu){}
 
 
 bool EmulatorClock :: cycle_tick(u32 cycles) {
