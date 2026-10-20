@@ -12,9 +12,7 @@ CPU :: CPU(std::reference_wrapper<MMU> m, std::reference_wrapper<EmulatorClock> 
 void CPU :: CPU_cycle() {
     // check if the halt flag is set, if so skip the cycle
     if(halt_flag) {
-        //std::cout << "CPU is halted" << std::endl;
-        clock.get().cycle_tick(4); // still consumes 4 cycles even if halted
-
+        std::cout << "CPU is halted, skipping cycle" << std::endl;
         // check if an interrupt is requested and enabled, if so exit the halt state
         if(mmu.get().pending_interrupts()) {
             halt_flag = false;
@@ -23,26 +21,36 @@ void CPU :: CPU_cycle() {
                 execute_interrupts();
             }
         }
+        else {
+            clock.get().cycle_tick(4); // still consumes 4 cycles even if halted
+        }
     }
     else {
         // check if there are pending interupts && IME is true: execute the interrupt
+        //std::cout << mmu.get().pending_interrupts() << std::endl;
+        //std::cout << IME_flag << std::endl;
+        //std::cout<< "else halt_flag" << std::endl;
         if(mmu.get().pending_interrupts() && IME_flag) {
+            std::cout << "Executing interrupts" << std::endl;
             execute_interrupts();
             return;
         }
 
         // get the current opcode from the mmu
         opcode = mmu.get().read_from_bytes(rg.program_counter);
-        std::cout << "Opcode: " << std::hex << opcode << std::endl;
-        
+        //rg.program_counter += 1;
+        //std::cout << "Opcode: " << std::hex << opcode << std::endl;
+        std::cout << "PC: 0x" << std::hex << (int)rg.program_counter << " | Opcode: 0x" << (int)opcode << std::endl;
+
         // Halt bug for games that use it
         if(halt_bug) {
+            std::cout << "halt_bug is true, not incrementing PC" << std::endl;
             halt_bug = false;
         }
         else {
-            rg.program_counter + 1;
-        } 
-
+            rg.program_counter += 1;
+        }
+        
         // call the right table i.e if nonCB OR CB and start decoding the instruction
         if(opcode == 0xcb) {
             opcode = mmu.get().read_from_bytes(rg.program_counter);
@@ -60,12 +68,14 @@ void CPU :: CPU_cycle() {
 
 // execute interrupts
 void CPU :: execute_interrupts() {
-    u8 ie_reg = mmu.get().read_from_bytes(0xffff);
-    u8 if_reg = mmu.get().read_from_bytes(0xff0f);
-    u8 pending_interrupt = ie_reg & if_reg & 0x1f; // last five bits
-
+    //u8 ie_reg = mmu.get().read_from_bytes(0xffff);
+    //u8 if_reg = mmu.get().read_from_bytes(0xff0f);
+    //u8 pending_interrupt = ie_reg & if_reg & 0x1f; // last five bits
     u16 vector   = 0;
     u8 bit_mask  = 0;
+
+    bool pending_interrupt = mmu.get().pending_interrupts();
+    u8 if_reg = mmu.get().read_from_bytes(0xff0f);
 
     if(pending_interrupt & 0x01) { // V-blank
         vector   = 0x0040;
@@ -181,7 +191,8 @@ void CPU :: POP_stack() {
 // opcode functions
 // NOP
 void CPU :: _0x00_NOP() {
-    rg.program_counter += 1;
+    std::cout << "NOP executed" << std::endl;
+    //rg.program_counter += 1;
     clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
@@ -211,8 +222,10 @@ void CPU :: _0x1000_STOP() {
 
 // LD functions
 void CPU :: LD_r16_imm16() {
-    u8 low_byte = mmu.get().read_from_bytes(rg.program_counter++);
-    u8 high_byte = mmu.get().read_from_bytes(rg.program_counter++);
+    u8 low_byte = mmu.get().read_from_bytes(rg.program_counter);
+    rg.program_counter += 1;
+    u8 high_byte = mmu.get().read_from_bytes(rg.program_counter);
+    rg.program_counter += 1;
 
     u8 destination = (opcode & 0x30) >> 4; // bits 5-4
     switch(destination) {
@@ -234,6 +247,11 @@ void CPU :: LD_r16_a() {
         case 3: mmu.get().write_to_bytes(rg.hl, rg.a); break;
         default: break; // invalid register pair
     }
+
+    /*
+    if(destination == 1) {
+        std::cout << "LD_r16_a: Writing to DE address 0x" << std::hex << rg.de << " value: 0x" << std::hex << (int)rg.a << std::endl;
+    }*/
 
     if(destination == 2) {
         rg.hl += 1; // increment HL after writing to memory
@@ -268,7 +286,7 @@ void CPU :: LD_imm16_sp() {
 
 void CPU :: LD_a_r16() {
     u8 source = (opcode & 0x30) >> 4; // bits 5-4
-    u16 address = 0;
+    u16 address = 0x0000;
 
     switch(source) {
         case 0: address = rg.bc; break;
@@ -278,14 +296,15 @@ void CPU :: LD_a_r16() {
         default: break; // invalid register pair
     }
 
-    u8 value = mmu.get().read_from_bytes(address);
-    rg.a = value;
+    rg.a = mmu.get().read_from_bytes(address);
+    std::cout<< "LD_a_r16: Reading from address 0x" << std::hex << address << " value: 0x" << std::hex << (int)rg.a << std::endl;
+    //rg.a = value;
 
     if(source == 2) {
-        rg.hl += 1; // increment HL after reading from memory
+        rg.hl   = (address + 1);
     }
     else if(source == 3) {
-        rg.hl -= 1; // decrement HL after reading from memory
+        rg.hl   = (address - 1);
     }
     clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
@@ -394,25 +413,26 @@ void CPU :: INC_r16() {
 }
 
 void CPU :: INC_r8() {
-    // check if half carry will occur after addtion operation
-    bool check_half_carry = (opcode & 0x0f) == 0x0f;
+    // check if half carry will occur after addition operation
+    bool check_half_carry = false;
 
     u8 operand = (opcode & 0x38) >> 3; // bits 5-3
-    u8 value   = 0;
+    u8 value   = 0x00;
     switch(operand) {
-        case 0: rg.b += 1; value = rg.b; break;
-        case 1: rg.d += 1; value = rg.d; break;
-        case 2: rg.h += 1; value = rg.h; break;
+        case 0: check_half_carry = ((rg.b & 0x0f) == 0x0f); rg.b += 1; value = rg.b; break;
+        case 1: check_half_carry = ((rg.c & 0x0f) == 0x0f); rg.c += 1; value = rg.c; break;
+        case 2: check_half_carry = ((rg.d & 0x0f) == 0x0f); rg.d += 1; value = rg.d; break;
+        case 3: check_half_carry = ((rg.e & 0x0f) == 0x0f); rg.e += 1; value = rg.e; break;
+        case 4: check_half_carry = ((rg.h & 0x0f) == 0x0f); rg.h += 1; value = rg.h; break;
+        case 5: check_half_carry = ((rg.l & 0x0f) == 0x0f); rg.l += 1; value = rg.l; break;
+        case 6: check_half_carry = ((mmu.get().read_from_bytes(rg.hl) & 0x0f) == 0x0f); value = mmu.get().read_from_bytes(rg.hl) + 1; mmu.get().write_to_bytes(rg.hl, value); break;
+        case 7: check_half_carry = ((rg.a & 0x0f) == 0x0f); rg.a += 1; value = rg.a; break;
         default: break; // invalid register pair
     }
 
-    if(operand == 3) {
-        value = mmu.get().read_from_bytes(rg.hl);
-        value += 1;
-        mmu.get().write_to_bytes(rg.hl, value);
-    }
+    //std::cout<< "INC_r8: Incremented register " << (int)operand << " to value: 0x" << std::hex << (int)value << std::endl;
 
-    rg.set_flag(rg.Zero_flag, (value == 0));
+    rg.set_flag(rg.Zero_flag, (value == 0)); 
     rg.set_flag(rg.Subtract_flag, false);
     rg.set_flag(rg.HalfCarry_flag, check_half_carry);
 
@@ -1247,18 +1267,56 @@ void CPU :: RETI() { // return from interrupt
 
 // JUMP functions
 void CPU :: JR_cond_imm8() {
-    if(!rg.get_Zero_flag() || rg.get_Zero_flag() || !rg.get_Carry_flag() || rg.get_Carry_flag()) {
-        u8 offset = static_cast<u8>(mmu.get().read_from_bytes(rg.program_counter++));
-        rg.program_counter += offset;
-        clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
-    }
-    else {
-        clock.get().cycle_tick(8);
+    s8 offset = static_cast<s8>(mmu.get().read_from_bytes(rg.program_counter++));
+
+    u8 condition = (opcode & 0x18) >> 3; // bits 4-3
+    switch(condition) {
+        case 0: // JR NZ, r8
+            if(!rg.get_Zero_flag()) {
+                std::cout << "JR NZ Taken | Reg E: 0x" << std::hex << (int)rg.e << " | Zero Flag bit: " << (int)(rg.f & 0x80) << std::endl;
+
+                rg.program_counter += offset;
+                clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
+            }
+            else {
+                std::cout << "JR NZ Taken | Reg E: 0x" << std::hex << (int)rg.e << " | Zero Flag bit: " << (int)(rg.f & 0x80) << std::endl;
+                clock.get().cycle_tick(8);
+                
+            }
+            break;
+        case 1: // JR Z, r8
+            if(rg.get_Zero_flag()) {
+                rg.program_counter += offset;
+                clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
+            }
+            else {
+                clock.get().cycle_tick(8);
+            }
+            break;
+        case 2: // JR NC, r8
+            if(!rg.get_Carry_flag()) {
+                rg.program_counter += offset;
+                clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
+            }
+            else {
+                clock.get().cycle_tick(8);
+            }
+            break;
+        case 3: // JR C, r8
+            if(rg.get_Carry_flag()) {
+                rg.program_counter += offset;
+                clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
+            }
+            else {
+                clock.get().cycle_tick(8);
+            }
+            break;
+        default: break; // invalid condition
     }
 }
 
 void CPU :: JR_imm8() {
-    u8 offset = static_cast<u8>(mmu.get().read_from_bytes(rg.program_counter++));
+    s8 offset = static_cast<s8>(mmu.get().read_from_bytes(rg.program_counter++));
 
     rg.program_counter += offset;
     clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
@@ -1278,10 +1336,13 @@ void CPU :: JP_cond_imm16() {
 }
 
 void CPU :: JP_imm16() {
-    u8 low_byte  = mmu.get().read_from_bytes(rg.program_counter++);
-    u8 high_byte = mmu.get().read_from_bytes(rg.program_counter++);
+    //std::cout << "JP_imm16" << std::endl;
+    u8 low_byte  = mmu.get().read_from_bytes(rg.program_counter);
+    rg.program_counter += 1;
+    u8 high_byte = mmu.get().read_from_bytes(rg.program_counter);
+    rg.program_counter += 1;
 
-    rg.program_counter = (static_cast<u16>(high_byte) << 8) | low_byte;
+    rg.program_counter = (high_byte << 8) | low_byte;
     clock.get().cycle_tick(nonCB_opcode_cycles[opcode]);
 }
 
